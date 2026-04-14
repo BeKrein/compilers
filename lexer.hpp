@@ -1,20 +1,19 @@
 #ifndef LEXER_HPP
 #define LEXER_HPP
 
-// pair
-// Usado no retorno da funcao analisar: {fita, tabela_de_simbolos}.
+//para o std::pair
 #include <utility>
-// string
-// Tipo base para lexemas, estados e identificadores de token.
+
+// para ultilizar strings
 #include <string>
-// vector
-// Estrutura sequencial usada para armazenar fita e tabela em ordem de leitura.
+
+// para ultilizar vector
 #include <vector>
 
 // RegistroToken representa uma linha da Tabela de Simbolos.
 // - linha: em qual linha do codigo fonte o lexema apareceu
-// - identificador: codigo do token (E1, E2, E99, ...)
-// - rotulo: lexema original (ex.: "se", "10", ";")
+// - identificador: codigo do token (E1, E2, E3, E4, E99)
+// - rotulo: lexema original (ex.: "se", "sai", "foi")
 struct RegistroToken {
     int linha;
     std::string identificador;
@@ -23,9 +22,6 @@ struct RegistroToken {
 
 class AnalisadorLexico {
 public:
-    // Construtor padrao.
-    // Nesta versao, as tabelas estao em constantes no .cpp,
-    // entao o construtor nao precisa inicializar estado interno complexo.
     AnalisadorLexico();
 
     // Analisa todo o texto de entrada e retorna:
@@ -39,9 +35,8 @@ private:
     std::string classificarPalavraComAFD(const std::string& lexema) const;
 
     // Classifica um lexema geral:
-    // - somente digitos -> E5
-    // - somente letras  -> classificarPalavraComAFD
-    // - mistura/invalid -> E99
+    // - somente letras -> classificarPalavraComAFD
+    // - qualquer outro padrao -> E99
     std::string classificarLexema(const std::string& lexema) const;
 };
 

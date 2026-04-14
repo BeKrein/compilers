@@ -5,48 +5,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace {
-// ==========================
-// GUIA RAPIDO: unordered_map
-// ==========================
-// std::unordered_map<K, V> guarda pares (chave -> valor) usando tabela hash.
-// Caracteristicas praticas:
-// - Busca/insercao tipicamente O(1) medio.
-// - Nao preserva ordem de insercao.
-// - ideal para "dado uma chave, qual o valor associado?"
-//
-// Operacoes usadas neste projeto:
-// - mapa.find(chave):
-//   retorna iterador para o par encontrado, ou mapa.end() se nao existir.
-// - mapa.count(chave):
-//   retorna 1 se existe, 0 se nao existe.
-//
-// Exemplo simples:
-// unordered_map<char, string> m = {{'a', "E1"}};
-// auto it = m.find('a');
-// if (it != m.end()) {
-//     // it->first  = 'a'
-//     // it->second = "E1"
-// }
-
-// Estado inicial do automato.
 const std::string ESTADO_INICIAL = "S";
-// Estado de erro/sumidouro do automato.
+
 const std::string ESTADO_ERRO = "X";
 
-// Alfabeto valido para as palavras modeladas pelo AFD do enunciado.
-// unordered_set tambem e hash-based e bom para "pertence / nao pertence".
 const std::unordered_set<char> ALFABETO = {'s', 'e', 'a', 'i', 'f', 'o'};
 
-// AFD determinizado:
-// - Chave externa: estado atual (string)
-// - Valor externo: mapa de transicoes desse estado
-// - Chave interna: simbolo lido (char)
-// - Valor interno: proximo estado (string)
-//
-// Leitura semantica:
-// AFD["S"]['s'] == "AC"
-// significa: no estado S, lendo 's', vai para estado AC.
+// unordered_map: estrutura de dados de mapeamento chave-valor, usada para o AFD e estados finais.
+// nesse caso são 2 mapas: um para o AFD (mapa de mapas) e outro para os estados finais (mapa simples).
 const std::unordered_map<std::string, std::unordered_map<char, std::string>> AFD = {
     {"S",  {{'s', "AC"}, {'e', "I"}, {'a', "I"}, {'i', "I"}, {'f', "FI"}, {'o', "X"}, {'@', "X"}}},
     {"AC", {{'s', "X"},  {'e', "B"}, {'a', "D"}, {'i', "X"}, {'f', "X"},  {'o', "X"}, {'@', "X"}}},
@@ -61,7 +27,6 @@ const std::unordered_map<std::string, std::unordered_map<char, std::string>> AFD
 };
 
 // Mapeia estados finais do AFD para identificadores de token.
-// Se um estado nao estiver aqui, ele nao e considerado final para o lexer.
 const std::unordered_map<std::string, std::string> ESTADOS_FINAIS = {
     {"B", "E1"},
     {"E", "E2"},
@@ -69,185 +34,110 @@ const std::unordered_map<std::string, std::string> ESTADOS_FINAIS = {
     {"I", "E4"}
 };
 
-// Mapeia simbolos especiais para token id.
-const std::unordered_map<char, std::string> SIMBOLOS_ESPECIAIS = {
-    {'=', "E6"},
-    {';', "E7"}
-};
 
-// Wrappers pequenos para deixar o codigo principal mais legivel.
+// Verifica se um caractere é letra.
 bool ehLetra(char c) {
-    return std::isalpha(static_cast<unsigned char>(c)) != 0;
+    return isalpha(c);
 }
 
-bool ehDigito(char c) {
-    return std::isdigit(static_cast<unsigned char>(c)) != 0;
-}
-
-// Adiciona token na fita e na tabela de simbolos ao mesmo tempo.
-// Evita duplicacao de codigo no loop principal.
-void adicionarToken(
-    std::vector<std::string>& fita,
-    std::vector<RegistroToken>& simbolos,
-    int linha,
-    const std::string& identificador,
-    const std::string& rotulo
-) {
+// Adiciona um token na fita e na tabela de simbolos ao mesmo tempo.
+// Exemplo de uso: adicionarToken(fita, simbolos, 2, "E1", "se");
+// recebe: linha = 2, identificador = "E1", rotulo = "se"
+// resultado: fita recebe "E1", simbolos recebe {2, "E1", "se"}
+void adicionarToken(std::vector<std::string>& fita, std::vector<RegistroToken>& simbolos, int linha, 
+                    const std::string& identificador, const std::string& rotulo) {
     fita.push_back(identificador);
     simbolos.push_back({linha, identificador, rotulo});
 }
 
-// Consome uma sequencia continua de caracteres que satisfaz o predicado.
-// Exemplo:
-// - se i aponta para inicio de "abc123" e predicado=ehLetra,
-//   retorna "abc" e atualiza i para o '1'.
-std::string consumirSequencia(const std::string& linha, std::size_t& i, bool (*predicado)(char)) {
-    const std::size_t inicio = i;
-    while (i < linha.size() && predicado(linha[i])) {
-        ++i;
+// Consome uma sequencia continua de caracteres que satisfazem um predicado.
+// exemplo de uso: consumirSequencia(linha, 3, ehLetra).
+// recebe: linha = "sai se foi"
+// retorna: "se"
+// atualiza o cursos para a posicao logo apos a sequencia consumida (cursor = 5, apontando para o espaco).
+std::string consumirSequencia(const std::string& linha, std::size_t& cursor, bool (*predicado)(char)) {
+    std::string resultado;
+    while (cursor < linha.size() && predicado(linha[cursor])) {
+        resultado += linha[cursor];
+        ++cursor;
     }
-    return linha.substr(inicio, i - inicio);
+    return resultado;
 }
-}  // namespace
 
+
+// Construtor da classe.
 AnalisadorLexico::AnalisadorLexico() = default;
 
+// Classifica uma palavra percorrendo o AFD.
+// exemplo de uso: classificarPalavraComAFD("se")
+// recebe: "se"
+// retorna: "E1" (estado final B do AFD)
+
 std::string AnalisadorLexico::classificarPalavraComAFD(const std::string& lexema) const {
-    // Comeca no estado inicial e caminha no AFD para cada caractere.
-    std::string estado = ESTADO_INICIAL;
-
-    for (char ch : lexema) {
-        // Se o char nao pertence ao alfabeto do automato, tratamos como '@'.
-        // Isso facilita mandar qualquer simbolo "fora do modelo" para erro.
-        const char simbolo = ALFABETO.count(ch) ? ch : '@';
-
-        // Busca o mapa de transicoes do estado atual.
-        const auto itEstado = AFD.find(estado);
-        if (itEstado == AFD.end()) {
-            // Estado inexistente na tabela -> erro estrutural/entrada invalida.
-            return "E99";
+    std::string estadoAtual = ESTADO_INICIAL;
+    for (char c : lexema){
+        // count() retorna 0 se o caractere não estiver no alfabeto, ou 1 se estiver.
+        if (ALFABETO.count(c) == 0) {
+            return "X";  // Caractere fora do alfabeto leva ao estado de erro
         }
-
-        // Busca a transicao para o simbolo lido.
-        const auto itTransicao = itEstado->second.find(simbolo);
-        if (itTransicao == itEstado->second.end()) {
-            // Transicao ausente -> token invalido para este automato.
-            return "E99";
-        }
-
-        // Anda para o proximo estado.
-        estado = itTransicao->second;
-        if (estado == ESTADO_ERRO) {
-            // Caiu no estado de erro: encerra classificacao.
-            return "E99";
-        }
+                      //Acha no AFD o próximo estado a partir do estado atual e do caractere lido
+        estadoAtual = AFD.at(estadoAtual).at(c);
     }
-
-    // Depois de consumir todo lexema, precisa terminar em estado final.
-    const auto itFinal = ESTADOS_FINAIS.find(estado);
-    return itFinal != ESTADOS_FINAIS.end() ? itFinal->second : "E99";
+    // Verifica se o estado atual é final e retorna o identificador correspondente, ou E99 se não for final
+    if (ESTADOS_FINAIS.count(estadoAtual) > 0) {
+        return ESTADOS_FINAIS.at(estadoAtual);
+    }
+    return "E99";  // Estado não final, erro
 }
 
-std::string AnalisadorLexico::classificarLexema(const std::string& lexema) const {
-    // Descobre se todos os chars sao digitos e/ou letras.
-    // Comecamos com true e derrubamos para false quando achar violacao.
-    bool soDigitos = !lexema.empty();
-    bool soLetras = !lexema.empty();
+// Classifica um lexema geral.
+// Caso não implementar numeros deletar essa função
+// Se for apenas letras: chama classificarPalavraComAFD
+// Senão: retorna E99
+// std::string AnalisadorLexico::classificarLexema(const std::string& lexema) const {
+// }
 
-    for (unsigned char c : lexema) {
-        if (!std::isdigit(c)) {
-            soDigitos = false;
-        }
-        if (!std::isalpha(c)) {
-            soLetras = false;
-        }
-    }
-
-    if (soDigitos) {
-        // Constante inteira.
-        return "E5";
-    }
-
-    if (soLetras) {
-        // Palavra/identificador reconhecido pelo AFD.
-        return classificarPalavraComAFD(lexema);
-    }
-
-    // Qualquer outro padrao (mistura invalida etc.)
-    return "E99";
-}
-
+// varre a entrada linearmente,
+// agrupa símbolos válidos em lexemas,
+// classifica cada lexema,
+// registra saída estruturada (fita + tabela).
 std::pair<std::vector<std::string>, std::vector<RegistroToken>> AnalisadorLexico::analisar(const std::string& fonte) const {
-    // fita: sequencia de identificadores de token (E1 E2 ... $)
     std::vector<std::string> fita;
-    // simbolos: tabela de simbolos (linha, token, lexema)
     std::vector<RegistroToken> simbolos;
-
-    // istringstream permite ler string como se fosse arquivo.
-    std::istringstream entrada(fonte);
+    //cria um stream de string para ler o texto linha por linha
+    std::istringstream stream(fonte);
     std::string linha;
     int numeroLinha = 0;
-
-    // Leitura linha a linha para preencher coluna "linha" da tabela.
-    while (std::getline(entrada, linha)) {
+    // coloca cada linha do texto na variavel linha, e processa cada linha
+    while (std::getline(stream, linha)) {
         ++numeroLinha;
-        // i aponta para o caractere atual dentro da linha.
-        std::size_t i = 0;
-
-        while (i < linha.size()) {
-            char ch = linha[i];
-
-            // Ignora espacamentos (espaco, tab etc.).
-            if (std::isspace(static_cast<unsigned char>(ch))) {
-                ++i;
-                continue;
+        // size_t usado na manipulação de índices e tamanhos de strings.
+        std::size_t cursor = 0;
+        while (cursor < linha.size()) {
+            if (std::isspace(linha[cursor])) {
+                // Se é ' ' ou '\t' ou '\n', apenas avança o cursor para ignorar.
+                ++cursor;
+            } else if (ehLetra(linha[cursor])) {
+                // Se é letra, consome a sequência de letras para formar um lexema.
+                std::string lexema = consumirSequencia(linha, cursor, ehLetra);
+                std::string identificador = classificarPalavraComAFD(lexema);
+                adicionarToken(fita, simbolos, numeroLinha, identificador, lexema);
+            } else {
+                // Caractere não é espaço nem letra, classifica como erro
+                std::string lexema(1, linha[cursor]);
+                adicionarToken(fita, simbolos, numeroLinha, "E99", lexema);
+                ++cursor;
             }
-
-            // Verifica se e simbolo especial usando unordered_map.
-            // find retorna iterador. Se != end(), existe a chave.
-            const auto itEspecial = SIMBOLOS_ESPECIAIS.find(ch);
-            if (itEspecial != SIMBOLOS_ESPECIAIS.end()) {
-                // itEspecial->second e o token id associado ao simbolo.
-                adicionarToken(fita, simbolos, numeroLinha, itEspecial->second, std::string(1, ch));
-                ++i;
-                continue;
-            }
-
-            // Bloco de letras: consome sequencia inteira [a-zA-Z]+.
-            if (ehLetra(ch)) {
-                const std::string lexema = consumirSequencia(linha, i, ehLetra);
-                const std::string id = classificarLexema(lexema);
-                adicionarToken(fita, simbolos, numeroLinha, id, lexema);
-                continue;
-            }
-
-            // Bloco de digitos: consome sequencia inteira [0-9]+.
-            if (ehDigito(ch)) {
-                const std::string lexema = consumirSequencia(linha, i, ehDigito);
-                const std::string id = classificarLexema(lexema);
-                adicionarToken(fita, simbolos, numeroLinha, id, lexema);
-                continue;
-            }
-
-            // Qualquer outro caractere isolado vira erro lexico.
-            adicionarToken(fita, simbolos, numeroLinha, "E99", std::string(1, ch));
-            ++i;
         }
     }
-
-    // Marcador de fim da fita exigido no enunciado.
-    fita.push_back("$");
+    fita.push_back("$");  // Marcador de fim (não remova)
     return {fita, simbolos};
 }
 
 std::string formatarTabelaSimbolos(const std::vector<RegistroToken>& simbolos) {
-    // Monta texto TSV (tab-separated values) para ficar facil de ler/importar.
-    std::ostringstream saida;
-    saida << "linha\tidentificador\trotulo\n";
-
-    for (const auto& s : simbolos) {
-        saida << s.linha << "\t" << s.identificador << "\t" << s.rotulo << "\n";
+    std::string resultado;
+    for (const auto& registro : simbolos) {
+        resultado += std::to_string(registro.linha) + "\t" + registro.identificador + "\t" + registro.rotulo + "\n";
     }
-
-    return saida.str();
+    return resultado;
 }

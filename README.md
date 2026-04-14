@@ -9,9 +9,6 @@ A descricao do trabalho pode ser encontrada em `DescricaoTrabalhoAnalisadorLexic
 	- `E2`: palavra reservada `sai`
 	- `E3`: palavra reservada `foi`
 	- `E4`: identificador pela GR `[faei]+`
-	- `E5`: constante inteira `[0-9]+`
-	- `E6`: simbolo especial `=`
-	- `E7`: simbolo especial `;`
 	- `E99`: erro lexico
 - AFD determinizado (baseado no exemplo do enunciado) com estado de erro `X`
 - Algoritmo de reconhecimento que gera:
