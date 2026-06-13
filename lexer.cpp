@@ -134,9 +134,10 @@ std::pair<std::vector<std::string>, std::vector<RegistroToken>> AnalisadorLexico
     return {fita, simbolos};
 }
 
-std::string formatarTabelaSimbolos(const std::vector<RegistroToken>& simbolos) {
+std::string formatarTabelaSimbolos(const std::vector<RegistroToken>& simbolos, std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos) {
     std::string resultado;
     for (const auto& registro : simbolos) {
+        tabelaSimbolos[std::to_string(registro.linha)][registro.identificador] = registro.rotulo;
         resultado += std::to_string(registro.linha) + "\t" + registro.identificador + "\t" + registro.rotulo + "\n";
     }
     return resultado;

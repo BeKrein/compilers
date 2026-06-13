@@ -41,6 +41,6 @@ private:
 };
 
 // Gera texto tabulado da tabela de simbolos para impressao e arquivo.
-std::string formatarTabelaSimbolos(const std::vector<RegistroToken>& simbolos);
+std::string formatarTabelaSimbolos(const std::vector<RegistroToken>& simbolos, std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos);
 
 #endif

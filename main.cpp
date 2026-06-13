@@ -13,9 +13,14 @@
 
 #include <string>
 
+#include <stack>
+
 int main() {
     // fonte guardara todo o conteudo que sera analisado.
     std::string fonte;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tabelaSimbolos;
+    std::unordered_map<int, int> tamanhoProducoes;
+    
 
     {
         // Tenta abrir input.txt no diretorio atual.
@@ -47,7 +52,7 @@ int main() {
 
     // Imprime Tabela de Simbolos no terminal.
     std::cout << "TABELA DE SIMBOLOS:\n";
-    std::string tabelaTexto = formatarTabelaSimbolos(tabela);
+    std::string tabelaTexto = formatarTabelaSimbolos(tabela, tabelaSimbolos);
     std::cout << tabelaTexto;
 
     // Garante que a pasta output exista.
@@ -90,9 +95,36 @@ int main() {
     return 0;
 }
 
-std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable) {
-    // Implementação do analisador sintático usando a tabela de parsing.
-    // Esta função é um esqueleto e deve ser preenchida com a lógica de análise sintática.
+std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable, std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tabelaSimbolos) {
+    //gera a fita de entrada para o analisador sintatico, e a tabela de parsing
+    std::stack<std::string> pilha;
+    pilha.push("0"); // estado inicial
+    int linhas = tabelaSimbolos.size();
+    for (size_t i = 0; i < linhas; i++){
+        std::string simboloEntrada = fita[i];
+        std::string estadoAtual = pilha.top();
+        if (parsingTable.count(estadoAtual) > 0 && parsingTable.at(estadoAtual).count(simboloEntrada) > 0) {
+            std::string acao = parsingTable.at(estadoAtual).at(simboloEntrada);
+            if (acao[0] == 's') {
+                // Shift
+                pilha.push(simboloEntrada);
+                pilha.push(acao.substr(1)); // nova estado
+            } else if (acao[0] == 'r') {
+                // Reduce
+                int producao = std::stoi(acao.substr(1));
+                // std::unordered_map<int, int> tamanhoProducoes deve conter o numero de simbolos a serem desempilhados para cada producao
+                // precisamos ainda colocar o numero de simbolos a serem desempilhados para cada producao na tabela tamanhoProducoes
+                // dai usar isso para desempilhar a quantidade correta de simbolos da pilha
+
+            } else if (acao == "acc") {
+                // Accept
+                return "Análise sintática bem-sucedida.";
+            }
+        } else {
+            return "Erro de análise sintática.";
+        }
+    }
+
     return "Análise sintática não implementada.";
 }
 
