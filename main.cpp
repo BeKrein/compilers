@@ -9,6 +9,10 @@
 // sstream: ler arquivo inteiro para string
 #include <sstream>
 
+#include <unordered_map>
+
+#include <string>
+
 int main() {
     // fonte guardara todo o conteudo que sera analisado.
     std::string fonte;
@@ -67,5 +71,28 @@ int main() {
         tabelaArquivo << tabelaTexto;
     }
 
+    // SLR Parsing Table as unordered_map
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> parsingTable = {
+        {"0", {{"+", " "}, {"*", " "}, {"(", "s4"}, {")", " "}, {"id", "s5"}, {"$", " "}, {"E'", " "}, {"E", "1"}, {"T", "2"}, {"F", "3"}}},
+        {"1", {{"+", "s6"}, {"*", " "}, {"(", " "}, {")", " "}, {"id", " "}, {"$", "acc"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"2", {{"+", "r2"}, {"*", "s7"}, {"(", " "}, {")", "r2"}, {"id", " "}, {"$", "r2"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"3", {{"+", "r4"}, {"*", "r4"}, {"(", " "}, {")", "r4"}, {"id", " "}, {"$", "r4"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"4", {{"+", " "}, {"*", " "}, {"(", "s4"}, {")", " "}, {"id", "s5"}, {"$", " "}, {"E'", " "}, {"E", "8"}, {"T", "2"}, {"F", "3"}}},
+        {"5", {{"+", "r6"}, {"*", "r6"}, {"(", " "}, {")", "r6"}, {"id", " "}, {"$", "r6"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"6", {{"+", " "}, {"*", " "}, {"(", "s4"}, {")", " "}, {"id", "s5"}, {"$", " "}, {"E'", " "}, {"E", " "}, {"T", "9"}, {"F", "3"}}},
+        {"7", {{"+", " "}, {"*", " "}, {"(", "s4"}, {")", " "}, {"id", "s5"}, {"$", " "}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", "10"}}},
+        {"8", {{"+", "s6"}, {"*", " "}, {"(", " "}, {")", "s11"}, {"id", " "}, {"$", " "}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"9", {{"+", "r1"}, {"*", "s7"}, {"(", " "}, {")", "r1"}, {"id", " "}, {"$", "r1"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"10", {{"+", "r3"}, {"*", "r3"}, {"(", " "}, {")", "r3"}, {"id", " "}, {"$", "r3"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}},
+        {"11", {{"+", "r5"}, {"*", "r5"}, {"(", " "}, {")", "r5"}, {"id", " "}, {"$", "r5"}, {"E'", " "}, {"E", " "}, {"T", " "}, {"F", " "}}}
+    };
+
     return 0;
 }
+
+std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable) {
+    // Implementação do analisador sintático usando a tabela de parsing.
+    // Esta função é um esqueleto e deve ser preenchida com a lógica de análise sintática.
+    return "Análise sintática não implementada.";
+}
+

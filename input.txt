@@ -1,3 +1,7 @@
-se eaf = 10;
-sai foi feia;
-se foi;
+E' -> E
+E -> E + T
+E -> T
+T -> T * F
+T -> F
+F -> ( E )
+F -> id
