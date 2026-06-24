@@ -10,10 +10,13 @@
 // para ultilizar vector
 #include <vector>
 
+// para ultilizar unordered_map na assinatura de formatarTabelaSimbolos
+#include <unordered_map>
+
 // RegistroToken representa uma linha da Tabela de Simbolos.
 // - linha: em qual linha do codigo fonte o lexema apareceu
-// - identificador: codigo do token (E1, E2, E3, E4, E99)
-// - rotulo: lexema original (ex.: "se", "sai", "foi")
+// - identificador: codigo do token (id, +, *, (, ), E99)
+// - rotulo: lexema original (ex.: "x", "+", "(")
 struct RegistroToken {
     int linha;
     std::string identificador;
@@ -30,12 +33,9 @@ public:
     std::pair<std::vector<std::string>, std::vector<RegistroToken>> analisar(const std::string& fonte) const;
 
 private:
-    // Classifica uma palavra (apenas letras) percorrendo o AFD.
-    // Ex.: "se" -> E1, "sai" -> E2, "foi" -> E3, "eaf" -> E4.
-    std::string classificarPalavraComAFD(const std::string& lexema) const;
-
     // Classifica um lexema geral:
-    // - somente letras -> classificarPalavraComAFD
+    // - identificador -> "id"
+    // - simbolos da gramatica -> o proprio simbolo
     // - qualquer outro padrao -> E99
     std::string classificarLexema(const std::string& lexema) const;
 };
