@@ -17,21 +17,11 @@
 
 #include<iostream>
 
-std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos, std::unordered_map<int, int>& tamanhoProducoes);
+std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos);
 
 int main() {
     std::string fonte;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tabelaSimbolos;
-
-    //Para operações de redução, precisamos saber o tamanho do lado direito da produção.
-    std::unordered_map<int, int> tamanhoProducoes = {
-        {1, 3},
-        {2, 1},
-        {3, 3},
-        {4, 1},
-        {5, 3},
-        {6, 1}
-    };
 
     // Tabela de parsing para o analisador sintático.
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> parsingTable = {
@@ -61,7 +51,7 @@ int main() {
 
     AnalisadorLexico analisador;
     auto [fita, tabela] = analisador.analisar(fonte);
-    std::string resultadoSintatico = analisadorSintatico(fita, parsingTable, tabelaSimbolos, tamanhoProducoes);
+    std::string resultadoSintatico = analisadorSintatico(fita, parsingTable, tabelaSimbolos);
 
 
     std::cout << "FITA: ";
@@ -100,7 +90,7 @@ int main() {
     return 0;
 }
 
-std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos, std::unordered_map<int, int>& tamanhoProducoes) {
+std::string analisadorSintatico(const std::vector<std::string>& fita, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& parsingTable, const std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& tabelaSimbolos) {
     (void)tabelaSimbolos;
 
     std::stack<std::string> pilha;
@@ -114,6 +104,15 @@ std::string analisadorSintatico(const std::vector<std::string>& fita, const std:
         {5, "F"},
         {6, "F"}
     };
+    //Para operações de redução, precisamos saber o tamanho do lado direito da produção.
+    std::unordered_map<int, int> tamanhoProducoes = {
+        {1, 3},
+        {2, 1},
+        {3, 3},
+        {4, 1},
+        {5, 3},
+        {6, 1}
+    };
 
     for (std::size_t i = 0; i < fita.size(); ++i) {
         const std::string& simboloEntrada = fita[i];
@@ -121,12 +120,12 @@ std::string analisadorSintatico(const std::vector<std::string>& fita, const std:
         while (true) {
             std::string estadoAtual = pilha.top();
             if (parsingTable.count(estadoAtual) == 0 || parsingTable.at(estadoAtual).count(simboloEntrada) == 0) {
-                return "Erro de analise sintatica.";
+                return "Erro de analise sintatica, simbolo inesperado: " + simboloEntrada;
             }
 
             std::string acao = parsingTable.at(estadoAtual).at(simboloEntrada);
             if (acao == " ") {
-                return "Erro de analise sintatica.";
+                return "Erro de analise sintatica, acao nao definida para o estado " + estadoAtual + " e simbolo " + simboloEntrada;
             }
 
             if (acao == "acc") {
@@ -144,7 +143,7 @@ std::string analisadorSintatico(const std::vector<std::string>& fita, const std:
                 int tamanho = tamanhoProducoes[producao];
                 for (int j = 0; j < tamanho; ++j) {
                     if (pilha.size() < 2) {
-                        return "Erro de analise sintatica.";
+                        return "Erro de analise sintatica, pilha insuficiente para reduzir.";
                     }
                     pilha.pop();
                     pilha.pop();
@@ -153,12 +152,12 @@ std::string analisadorSintatico(const std::vector<std::string>& fita, const std:
                 std::string naoTerminal = producaoParaNaoTerminal.at(producao);
                 std::string estadoTopo = pilha.top();
                 if (parsingTable.count(estadoTopo) == 0 || parsingTable.at(estadoTopo).count(naoTerminal) == 0) {
-                    return "Erro de analise sintatica.";
+                    return "Erro de analise sintatica, acao nao definida para o estado " + estadoTopo + " e simbolo " + naoTerminal;
                 }
 
                 std::string proximoEstado = parsingTable.at(estadoTopo).at(naoTerminal);
                 if (proximoEstado == " ") {
-                    return "Erro de analise sintatica.";
+                    return "Erro de analise sintatica, acao nao definida para o estado " + estadoTopo + " e simbolo " + naoTerminal;
                 }
 
                 pilha.push(naoTerminal);
@@ -166,9 +165,8 @@ std::string analisadorSintatico(const std::vector<std::string>& fita, const std:
                 continue;
             }
 
-            return "Erro de analise sintatica.";
+            return "Erro de analise sintatica, acao nao definida para o estado " + pilha.top() + " e simbolo " + fita[i];
         }
     }
-
-    return "Analise sintatica nao implementada.";
+    return "Erro de analise sintatica, fim da fita inesperado.";
 }
